@@ -49,7 +49,6 @@ public class DbService :IDbService
                     ProjectId = reader.GetInt32(0),
                     Objective = reader.GetString(1),
                     StartDate = reader.GetDateTime(2),
-                    //EndDate = reader.GetDateTime(3),
                     Artifact = new ArtifactDto()
                     {
                         Name = reader.GetString(4),
@@ -70,6 +69,11 @@ public class DbService :IDbService
                     HireDate = reader.GetDateTime(11),
                     Role = reader.GetString(12)
                 });
+
+                if (reader.GetDateTime(3) != null)
+                {
+                    dto.EndDate = reader.GetDateTime(3);
+                }
             }
         }
         if (dto is null)
@@ -128,20 +132,14 @@ public class DbService :IDbService
             }
             
             command.Parameters.Clear();
-            command.CommandText = @"Select EndDate from Preservation_Project where ProjectId=@ProjectId";
-            command.Parameters.AddWithValue("@ProjectId", artifact.Project.ProjectId);
-            var EndDateResult = await command.ExecuteScalarAsync();
-            if (EndDateResult != null)
-            {
-                EndDateResult = artifact.Project.EndDate.HasValue ? artifact.Project.EndDate.Value : null;
-            }
-            
-            command.Parameters.Clear();
             command.CommandText = @"Insert into Preservation_Project (ProjectId,ArtifactId,StartDate,EndDate,Objective) values (@ProjectId,@ArtifactId,@StartDate,@EndDate,@Objective)";
             command.Parameters.AddWithValue("@ProjectId", projectIdResult);
             command.Parameters.AddWithValue("@ArtifactId", artifact.Artifact.ArtifactId);
             command.Parameters.AddWithValue("@StartDate", artifact.Project.StartDate);
-            command.Parameters.AddWithValue("@EndDate", EndDateResult);
+            if (artifact.Project.EndDate != null)
+            {
+                command.Parameters.AddWithValue("@EndDate", artifact.Project.EndDate);
+            }
             command.Parameters.AddWithValue("@Objective", artifact.Project.Objective);
             
             await command.ExecuteNonQueryAsync();
