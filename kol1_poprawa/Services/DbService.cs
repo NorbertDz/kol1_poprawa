@@ -97,7 +97,7 @@ public class DbService :IDbService
             command.CommandText = @"Select InstitutionId from Institution where InstitutionId=@InstitutionId";
             command.Parameters.AddWithValue("@InstitutionId", artifact.Artifact.InstituionId);
             var InstitutionIdResult = await command.ExecuteScalarAsync();
-            if (InstitutionIdResult == null)
+            if (InstitutionIdResult != null)
             {
                 throw new Exception("Nie znaleziono Institution o podanym ID");
             }
@@ -112,27 +112,36 @@ public class DbService :IDbService
             }
             
             command.Parameters.Clear();
-            command.CommandText = @"Instert into Artifact (ArtifactId,Name,OriginDate,InstitutionId) values (@ArtifactId,@Name,@OriginDate,@InstitutionId)";
+            command.CommandText = @"Insert into Artifact (ArtifactId,Name,OriginDate,InstitutionId) values (@ArtifactId,@Name,@OriginDate,@InstitutionId)";
             command.Parameters.AddWithValue("@ArtifactId", ArtifactIdResult);
             command.Parameters.AddWithValue("@Name",artifact.Artifact.Name);
             command.Parameters.AddWithValue("@OriginDate",artifact.Artifact.OriginDate);
             command.Parameters.AddWithValue("@InstitutionId",InstitutionIdResult);
             
             command.Parameters.Clear();
-            command.CommandText = @"Select ProjectId from Project where ProjectId=@ProjectId";
+            command.CommandText = @"Select ProjectId from Preservation_Project where ProjectId=@ProjectId";
             command.Parameters.AddWithValue("@ProjectId", artifact.Project.ProjectId);
             var projectIdResult = await command.ExecuteScalarAsync();
-            if (projectIdResult != null)
+            if (projectIdResult == null)
             {
-                throw new Exception("Istnieje projet o podanym ID");
+                throw new Exception("Istnieje projekt o podanym ID");
             }
             
             command.Parameters.Clear();
-            command.CommandText = @"Instet into Preservation_Project (ProjectId,ArtifactId,StartDate,EndDate,Objective) valuse (@ProjectId,@ArtifactId,@StartDate,@EndDate,@Objective)";
+            command.CommandText = @"Select EndDate from Preservation_Project where ProjectId=@ProjectId";
+            command.Parameters.AddWithValue("@ProjectId", artifact.Project.ProjectId);
+            var EndDateResult = await command.ExecuteScalarAsync();
+            if (EndDateResult != null)
+            {
+                EndDateResult = artifact.Project.EndDate.HasValue ? artifact.Project.EndDate.Value : null;
+            }
+            
+            command.Parameters.Clear();
+            command.CommandText = @"Insert into Preservation_Project (ProjectId,ArtifactId,StartDate,EndDate,Objective) values (@ProjectId,@ArtifactId,@StartDate,@EndDate,@Objective)";
             command.Parameters.AddWithValue("@ProjectId", projectIdResult);
-            command.Parameters.AddWithValue("@ArtifactId", ArtifactIdResult);
+            command.Parameters.AddWithValue("@ArtifactId", artifact.Artifact.ArtifactId);
             command.Parameters.AddWithValue("@StartDate", artifact.Project.StartDate);
-            command.Parameters.AddWithValue("@EndDate", artifact.Project.EndDate);
+            command.Parameters.AddWithValue("@EndDate", EndDateResult);
             command.Parameters.AddWithValue("@Objective", artifact.Project.Objective);
             
             await command.ExecuteNonQueryAsync();
